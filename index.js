@@ -87,17 +87,3 @@ class DeviceMonitor{
 }
 
 module.exports = BandwidthMonitor;
-
-
-const b = new BandwidthMonitor();
-// console.log(Object.keys(b.monitors));
-setInterval(() => {
-  console.log(b.monitors.en0.rxPerSec);
-  // b.monitors.en0.close();
-}, 1000);
-//
-// const b = new BandwidthUsage();
-// b.startLoggers();
-//
-// const b = new BandwidthUsage();
-// b.startTotalsLogger();
