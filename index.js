@@ -1,7 +1,6 @@
-'use strict';
+
 const Cap = require('cap').Cap;
 const decoders = require('cap').decoders;
-const myLocalIp = require('my-local-ip');
 
 const PROTOCOL = decoders.PROTOCOL;
 const bufSize = 10 * 1024 * 1024;
@@ -11,18 +10,18 @@ function isIPv4(string) {
   return !!/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(string);
 }
 
-function checkAddresses(addresses) {
-  for (let address of addresses){
+function checkAddresses(device) {
+  for (let address of device.addresses){
     if (isIPv4(address.addr)){
+      device.ipv4 = address.addr;
       return true;
     }
   }
   return false;
 }
 
-class BandwidthUsage{
+class BandwidthMonitor{
   constructor(options = {disableIPv6:true}){
-    this.ip = myLocalIp;
 
     this.devices = Cap.deviceList();
     if (options.interfaces) {
@@ -32,19 +31,21 @@ class BandwidthUsage{
     }
 
     if (options.disableIPv6){
-      this.devices = this.devices.filter((d) => checkAddresses(d.addresses));
+      this.devices = this.devices.filter((d) => checkAddresses(d));
     }
 
     this.monitors = {};
 
+
     this.devices.forEach((device) => {
-      this.monitors[device.name] = new DeviceMonitor(device, this.ip);
+      console.log(device);
+      this.monitors[device.name] = new DeviceMonitor(device);
     });
   }
 }
 
 class DeviceMonitor{
-  constructor(device,ip){
+  constructor(device){
     this.cap = new Cap();
     //todo(cc): catch permission denied warning
     const link = this.cap.open(device.name, '', bufSize, buffer);
@@ -56,10 +57,10 @@ class DeviceMonitor{
     this.cap.on('packet', (size) => {
       if (link === 'ETHERNET') {
         let ret = decoders.Ethernet(buffer);
-
+        //todo(cc): support ipv6
         if (ret.info.type === PROTOCOL.ETHERNET.IPV4) {
           ret = decoders.IPV4(buffer, ret.offset);
-          if (ret.info.srcaddr !== ip) {
+          if (ret.info.srcaddr !== device.ipv4) {
             this.totalRx += size;
           } else {
             this.totalTx += size;
@@ -85,14 +86,14 @@ class DeviceMonitor{
   }
 }
 
-module.exports = BandwidthUsage;
+module.exports = BandwidthMonitor;
 
 
-const b = new BandwidthUsage();
+const b = new BandwidthMonitor();
 // console.log(Object.keys(b.monitors));
 setInterval(() => {
   console.log(b.monitors.en0.rxPerSec);
-  b.monitors.en0.close();
+  // b.monitors.en0.close();
 }, 1000);
 //
 // const b = new BandwidthUsage();

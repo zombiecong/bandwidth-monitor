@@ -9,7 +9,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "cap": "^0.2.0",
-    "my-local-ip": "^1.0.0"
+    "cap": "^0.2.0"
   }
 }
