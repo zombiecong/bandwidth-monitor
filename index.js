@@ -54,7 +54,7 @@ class DeviceMonitor{
     this.txPerSec = 0;
     this.buffer = new Buffer(bufSize);
 
-
+    this.isCapturing = false;
   }
 
   capture(){
@@ -85,9 +85,13 @@ class DeviceMonitor{
       this.txPerSec = Math.abs((this.totalTx - lastTotalTx));
       lastTotalTx = this.totalTx;
     }, 1000);
+
+    this.isCapturing = true;
   }
 
   close(){
+    this.isCapturing = false;
+
     clearInterval(this.timer);
     this.cap.close();
     this.buffer = null;
