@@ -4,7 +4,6 @@ const decoders = require('cap').decoders;
 
 const PROTOCOL = decoders.PROTOCOL;
 const bufSize = 10 * 1024 * 1024;
-const buffer = new Buffer(bufSize);
 
 function isIPv4(string) {
   return !!/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(string);
@@ -47,20 +46,28 @@ class BandwidthMonitor{
 class DeviceMonitor{
   constructor(device){
     this.cap = new Cap();
-    //todo(cc): catch permission denied warning
-    const link = this.cap.open(device.name, '', bufSize, buffer);
+
+    this.device = device;
     this.totalRx = 0;
     this.totalTx = 0;
     this.rxPerSec = 0;
     this.txPerSec = 0;
+    this.buffer = new Buffer(bufSize);
+
+
+  }
+
+  capture(){
+    //need root
+    this.link = this.cap.open(this.device.name, '', bufSize, this.buffer);
 
     this.cap.on('packet', (size) => {
-      if (link === 'ETHERNET') {
-        let ret = decoders.Ethernet(buffer);
+      if (this.link === 'ETHERNET') {
+        let ret = decoders.Ethernet(this.buffer);
         //todo(cc): support ipv6
         if (ret.info.type === PROTOCOL.ETHERNET.IPV4) {
-          ret = decoders.IPV4(buffer, ret.offset);
-          if (ret.info.srcaddr !== device.ipv4) {
+          ret = decoders.IPV4(this.buffer, ret.offset);
+          if (ret.info.srcaddr !== this.device.ipv4) {
             this.totalRx += size;
           } else {
             this.totalTx += size;
@@ -83,6 +90,8 @@ class DeviceMonitor{
   close(){
     clearInterval(this.timer);
     this.cap.close();
+    this.buffer = null;
+
   }
 }
 
