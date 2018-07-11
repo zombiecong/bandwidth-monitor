@@ -38,7 +38,7 @@ class BandwidthMonitor{
 
 
     this.devices.forEach((device) => {
-      console.log(device);
+      // console.log(device);
       this.monitors[device.name] = new DeviceMonitor(device);
     });
   }
