@@ -1,17 +1,13 @@
-
 const Cap = require('cap').Cap;
 const decoders = require('cap').decoders;
+const ipUtils = require('ip');
 
 const PROTOCOL = decoders.PROTOCOL;
 const bufSize = 10 * 1024 * 1024;
 
-function isIPv4(string) {
-  return !!/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(string);
-}
-
 function checkAddresses(device) {
-  for (let address of device.addresses){
-    if (isIPv4(address.addr)){
+  for (let address of device.addresses) {
+    if (ipUtils.isV4Format(address.addr)) {
       device.ipv4 = address.addr;
       return true;
     }
@@ -19,8 +15,11 @@ function checkAddresses(device) {
   return false;
 }
 
-class BandwidthMonitor{
-  constructor(options = {disableIPv6:true}){
+class BandwidthMonitor {
+  constructor(options = {disableIPv6: true, ignoreLAN: false}) {
+
+    this.disableIPv6 = options && options.disableIPv6;
+    this.ignoreLAN = options && options.ignoreLAN;
 
     this.devices = Cap.deviceList();
     if (options.interfaces) {
@@ -29,24 +28,23 @@ class BandwidthMonitor{
       this.devices = this.devices.filter((d) => d.addresses.length);
     }
 
-    if (options.disableIPv6){
+    if (this.disableIPv6) {
       this.devices = this.devices.filter((d) => checkAddresses(d));
     }
 
     this.monitors = {};
 
-
     this.devices.forEach((device) => {
-      // console.log(device);
-      this.monitors[device.name] = new DeviceMonitor(device);
+      this.monitors[device.name] = new DeviceMonitor(device,this.ignoreLAN);
     });
   }
 }
 
-class DeviceMonitor{
-  constructor(device){
+class DeviceMonitor {
+  constructor(device,ignoreLAN) {
     this.cap = new Cap();
 
+    this.ignoreLAN = ignoreLAN;
     this.device = device;
     this.totalRx = 0;
     this.totalTx = 0;
@@ -57,7 +55,7 @@ class DeviceMonitor{
     this.isCapturing = false;
   }
 
-  capture(){
+  capture() {
     //need root
     this.link = this.cap.open(this.device.name, '', bufSize, this.buffer);
 
@@ -67,6 +65,9 @@ class DeviceMonitor{
         //todo(cc): support ipv6
         if (ret.info.type === PROTOCOL.ETHERNET.IPV4) {
           ret = decoders.IPV4(this.buffer, ret.offset);
+          if(this.ignoreLAN && ipUtils.isPrivate(ret.info.dstaddr)){
+            return;
+          }
           if (ret.info.srcaddr !== this.device.ipv4) {
             this.totalRx += size;
           } else {
@@ -89,7 +90,7 @@ class DeviceMonitor{
     this.isCapturing = true;
   }
 
-  close(){
+  close() {
     this.isCapturing = false;
 
     clearInterval(this.timer);
