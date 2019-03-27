@@ -1,13 +1,13 @@
 const BandwidthMonitor = require('.');
 const b = new BandwidthMonitor({disableIPv6:true,interfaces:[
-  'en0'
+  'en4'
   ]});
 console.log(Object.keys(b.monitors));
 
 try{
-  b.monitors.en0.capture();
+  b.monitors.en4.capture();
   setInterval(() => {
-    console.log(b.monitors.en0.rxPerSec);
+    console.log(b.monitors.en4.rxPerSec);
     // b.monitors.en0.close();
   }, 1000);
 }catch (e) {

@@ -52,7 +52,7 @@ class DeviceMonitor{
     this.totalTx = 0;
     this.rxPerSec = 0;
     this.txPerSec = 0;
-    this.buffer = new Buffer(bufSize);
+    this.buffer = Buffer.alloc(bufSize);
 
     this.isCapturing = false;
   }
