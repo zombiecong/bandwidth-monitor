@@ -1,6 +1,6 @@
 {
   "name": "bandwidth-monitor",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "bandwidth-monitor",
   "main": "index.js",
   "scripts": {

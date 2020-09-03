@@ -32,10 +32,10 @@ class BandwidthMonitor {
       this.devices = this.devices.filter((d) => checkAddresses(d));
     }
 
-    this.monitors = {};
+    this.monitors = new Map();
 
     this.devices.forEach((device) => {
-      this.monitors[device.name] = new DeviceMonitor(device,this.ignoreLAN);
+      this.monitors.set(device.name,new DeviceMonitor(device,this.ignoreLAN));
     });
   }
 }
